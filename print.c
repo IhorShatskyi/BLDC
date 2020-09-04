@@ -130,52 +130,52 @@ void PrintStringFinish(void){
 
 static void printLnUint(uint32_t src){
 	printUint(src);
-	PrintStringFinish();
+	//PrintStringFinish();
 	printString("\n\r");
 }
 static void printLnInt(int32_t src){
 	printInt(src);
-	PrintStringFinish();
+	//PrintStringFinish();
 	printString("\n\r");
 }
 static void printLnUshort(uint16_t src){
 	printUshort(src);
-	PrintStringFinish();
+	//PrintStringFinish();
 	printString("\n\r");
 }
 static void printLnShort(int16_t src){
 	printShort(src);
-	PrintStringFinish();
+	//PrintStringFinish();
 	printString("\n\r");
 }
 static void printLnUbyte(uint8_t src){
 	printUbyte(src);
-	PrintStringFinish();
+	//PrintStringFinish();
 	printString("\n\r");
 }
 static void printLnByte(int8_t src){
 	printByte(src);
-	PrintStringFinish();
+	//PrintStringFinish();
 	printString("\n\r");
 }
 static void printLnFloat(float src){
 	printFloat(src);
-	PrintStringFinish();
+	//PrintStringFinish();
 	printString("\n\r");
 }
 static void printLnComplex(complex src){
 	printComplex(src);
-	PrintStringFinish();
+	//PrintStringFinish();
 	printString("\n\r");
 }
 static void printLnString(char *src){
 	printString(src);
-	PrintStringFinish();
+	//PrintStringFinish();
 	printString("\n\r");
 }
 static void printLnConstString(const char *src){
 	printConstString(src);
-	PrintStringFinish();
+	//PrintStringFinish();
 	printString("\n\r");
 }
 

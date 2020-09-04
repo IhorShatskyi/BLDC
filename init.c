@@ -13,28 +13,30 @@
 // Master Functions
 static void Gpio(void);
 static void Systick(void);
-static void Tim1(void);
+static void Tim(void);
 static void Uart(void);
 static void Dma(void);
 static void FlashMemory(void);
 static void Rcc(void);
 static void Exti(void);
 static void Irq(void);
+static void Adc(void);
 
 // Master struct
 const struct initFunctions Init = {
 	Gpio,
 	Systick,
-	Tim1,
+	Tim,
 	Uart,
 	Dma,
 	FlashMemory,
 	Rcc,
 	Exti,
-	Irq
+	Irq,
+	Adc
 };
 
-static uint32_t pwmFactor = 64;
+static uint32_t pwmFactor = 3200;
 
 static void Exti(void) {
 	
@@ -63,47 +65,63 @@ static void Exti(void) {
 	
 }
 
-static void Tim1(void){
-	
+static void Tim(void){
+
 	RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
-	
-	
-	TIM1->PSC = 200 - 1; // CPU_CLK / 200 = 102 4000 Hz
-	TIM1->ARR = 64 - 1; // 102 4000 Hz / 64 = 16 000 Hz
-	
-	// 1
-	TIM1->CCR1 = pwmFactor; // skvagnost
+
+	// Tim1
+	TIM1->PSC = 2 - 1; // CPU_CLK / 2 = 102.400.000 Hz
+	TIM1->ARR = 6400 - 1; // 102.400.000 Hz / 6400 = 16 000 Hz
+	// A
+	TIM1->CCR1 = 0; // skvagnost
 	TIM1->CCMR1 |= TIM_CCMR1_OC1M_2 | TIM_CCMR1_OC1M_1;  // mode pwm 1
 	TIM1->CCMR1 |= TIM_CCMR1_OC1PE; // preload enable
-	TIM1->CCER |= TIM_CCER_CC1NP| TIM_CCER_CC1P; // output polarity complementary - low, output polarity - low
-	
-
-	// 2
-	TIM1->CCR2 = pwmFactor; // skvagnost
+	//TIM1->CCER |= TIM_CCER_CC1NP| TIM_CCER_CC1P; // output polarity complementary - low, output polarity - low
+	// B
+	TIM1->CCR2 = 0; // skvagnost
 	TIM1->CCMR1 |= TIM_CCMR1_OC2M_2 | TIM_CCMR1_OC2M_1;  // mode pwm 1
 	TIM1->CCMR1 |= TIM_CCMR1_OC2PE; // preload enable
-	TIM1->CCER |= TIM_CCER_CC2NP|TIM_CCER_CC2P; // output polarity complementary - low, output polarity - low
-	
-	// 3
-	TIM1->CCR3 = pwmFactor; // skvagnost
+	//TIM1->CCER |= TIM_CCER_CC2NP|TIM_CCER_CC2P; // output polarity complementary - low, output polarity - low
+	// C
+	TIM1->CCR3 = 0; // skvagnost
 	TIM1->CCMR2 |= TIM_CCMR2_OC3M_2 | TIM_CCMR2_OC3M_1;  // mode pwm 1
 	TIM1->CCMR2 |= TIM_CCMR2_OC3PE; // preload enable
-	TIM1->CCER |= TIM_CCER_CC3NP|TIM_CCER_CC3P; // output polarity complementary - low, output polarity - low
-	
-	
-	//TIM1->BDTR |= 255; // Dead-time generator setup
+	//TIM1->CCER |= TIM_CCER_CC3NP|TIM_CCER_CC3P; // output polarity complementary - low, output polarity - low
+
+	TIM1->BDTR |= 166; // Dead-time generator setup ~ 1 microsecond
 	TIM1->BDTR |= TIM_BDTR_MOE; // main output enable
-	
+
 	TIM1->CR1 |= TIM_CR1_CEN;
-	
-	// SYSTIMER
+
+	// Tim2 - SYSTIMER
 	RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
-  TIM2->PSC = 10240 - 1 ;
-	TIM2->ARR = (uint32_t) 0xf;
+  TIM2->PSC = 1024 - 1 ;// 100.000 Hz
+	TIM2->ARR = (uint32_t) 0xf; // Don't tuch
 	TIM2->CR1 |= TIM_CR1_CEN;
-	
-	
-	
+
+	// Tim4 - PMSM Sin Timer
+	RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
+  TIM4->PSC = 100 - 1; // 1.024.000 Hz
+	TIM4->ARR = 0;
+	TIM4->DIER |= TIM_DIER_UIE;
+	TIM4->CR1 |= TIM_CR1_CEN;
+
+	// Tim3 - Speed Timer
+	RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
+	TIM3->PSC = 100 - 1; // 1.024.000 Hz
+	TIM3->CNT = 0;
+	TIM3->ARR = 0xffff;		
+	TIM3->DIER |= TIM_DIER_UIE;
+	TIM3->CR1 |= TIM_CR1_CEN;
+
+//	// Tim5 - Speed Timer
+//	RCC->APB1ENR |= RCC_APB1ENR_TIM5EN;
+//  TIM5->PSC = 100 - 1; // 1.024.000 Hz
+//	TIM5->CNT = 0;
+//	TIM5->ARR = 0x001fffff;		
+//	//TIM5->DIER |= TIM_DIER_UIE;
+//	TIM5->CR1 |= TIM_CR1_CEN;
+
 }
 
 
@@ -125,6 +143,18 @@ static void Gpio(void) {
 	// Hall sensor C PA2
 	GPIOA->MODER |= 0<< GPIO_MODER_MODER2_Pos; // input mode
 	GPIOA->PUPDR |= 0x2 << GPIO_PUPDR_PUPD2_Pos; // Pull-down
+
+	// Battery volt control - PA3
+	GPIOA->MODER |= 0x3 << GPIO_MODER_MODER3_Pos; // Analog mode
+	
+	// Current A - PA4
+	GPIOA->MODER |= 0x3 << GPIO_MODER_MODER4_Pos; // Analog mode
+
+	// Current B - PA5
+	GPIOA->MODER |= 0x3 << GPIO_MODER_MODER5_Pos; // Analog mode
+
+	// Current C - PA6
+	GPIOA->MODER |= 0x3 << GPIO_MODER_MODER6_Pos; // Analog mode
 
 	// HS1 PA8
 	GPIOA->MODER |= 0x2U << GPIO_MODER_MODER8_Pos; // Mode - alternative function
@@ -196,14 +226,36 @@ static void Gpio(void) {
 	GPIOC->PUPDR |= 0x2 << GPIO_PUPDR_PUPD11_Pos; // Pull-down
 	GPIOC->AFR[1]  |= 0x7 << GPIO_AFRH_AFSEL11_Pos; // AF7
 
-
 	// LED PC13
 	GPIOC->MODER |= 0x1U << GPIO_MODER_MODE13_Pos; // Output mode
 	GPIOC->OTYPER |= 0x0U << GPIO_OTYPER_OT13_Pos; // Push-pul
 	GPIOC->OSPEEDR |= 0x3U << GPIO_OSPEEDR_OSPEED13_Pos; // Very high speed
 	GPIOC->PUPDR |= 0x2U << GPIO_PUPDR_PUPD13_Pos; // Pull-down
+	
+	// Test PC14
+	GPIOC->MODER |= 0x1U << GPIO_MODER_MODE14_Pos; // Output mode
+	GPIOC->OTYPER |= 0x0U << GPIO_OTYPER_OT14_Pos; // Push-pul
+	GPIOC->OSPEEDR |= 0x3U << GPIO_OSPEEDR_OSPEED14_Pos; // Very high speed
+	GPIOC->PUPDR |= 0x2U << GPIO_PUPDR_PUPD14_Pos; // Pull-down	
+
+	// Test PC15
+	GPIOC->MODER |= 0x1U << GPIO_MODER_MODE15_Pos; // Output mode
+	GPIOC->OTYPER |= 0x0U << GPIO_OTYPER_OT15_Pos; // Push-pul
+	GPIOC->OSPEEDR |= 0x3U << GPIO_OSPEEDR_OSPEED15_Pos; // Very high speed
+	GPIOC->PUPDR |= 0x2U << GPIO_PUPDR_PUPD15_Pos; // Pull-down	
+
 
 }
+
+static void Adc(void){
+	RCC->APB2ENR |= RCC_APB2ENR_ADC1EN; // clock ADC1
+	ADC1->SQR3 |= 6 << ADC_SQR3_SQ1_Pos; // ADC1 Channel 4 - AIN6 (Current C)
+	//ADC1->SQR3 |= 3 << ADC_SQR3_SQ1_Pos; // ADC1 Channel 3 - AIN3 (Battery volt)
+	ADC1->CR2 |= ADC_CR2_ADON; // Enable ADC1
+	
+}
+
+
 
 static void Systick(void){
 	SysTick->LOAD = 0xFFFFFFFFU;
@@ -278,18 +330,16 @@ static void Dma(void){
 	DMA2_Stream7->CR |=  1 << DMA_SxCR_DIR_Pos ;
 	DMA2_Stream7->CR |=  4 << DMA_SxCR_CHSEL_Pos;
 	
-	
-	
-	
-	
 }
 
 static void Irq(void){
 	
-	 NVIC_EnableIRQ(EXTI0_IRQn);
-	 NVIC_EnableIRQ(EXTI1_IRQn);
-	 NVIC_EnableIRQ(EXTI2_IRQn);
-	 NVIC_EnableIRQ(USART3_IRQn);
+	NVIC_EnableIRQ(EXTI0_IRQn);
+	NVIC_EnableIRQ(EXTI1_IRQn);
+	NVIC_EnableIRQ(EXTI2_IRQn);
+	NVIC_EnableIRQ(USART3_IRQn);
+	//NVIC_EnableIRQ(TIM4_IRQn);
+	//NVIC_EnableIRQ(TIM3_IRQn);
 	
 }
 

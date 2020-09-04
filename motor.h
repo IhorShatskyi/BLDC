@@ -3,6 +3,9 @@
 
 #include "stm32f446xx.h"
 
+extern volatile uint8_t sinTableIndex;
+extern int motorStop;
+
 
 extern const struct motorFunctions {
 	
@@ -13,12 +16,15 @@ extern const struct motorFunctions {
 		
 	} Speed;
 
+	
 	struct {
 		
 		void (*const Update)(void);
 		
 	} Coils;
 	
+	float (*const GetRealSpeed)(void);
+	void (*const UpdateRealSpeed)(float);
 	
 } Motor;
 

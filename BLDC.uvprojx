@@ -394,6 +394,11 @@
               <FileType>5</FileType>
               <FilePath>.\define.h</FilePath>
             </File>
+            <File>
+              <FileName>pwmSinTable.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\pwmSinTable.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
